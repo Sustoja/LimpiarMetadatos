@@ -1,0 +1,1 @@
+pyinstaller --distpath . --workpath ./tmp/build --noconfirm .\main.spec
