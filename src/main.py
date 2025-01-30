@@ -13,37 +13,24 @@ def _get_file_list(folder: Path, extensions: [str]) -> [Path]:
                   )
 
 
-def handle_pdf_metadata(filename: Path, delete_metadata: bool) -> None:
-    if delete_metadata:
-        md.remove_pdf_metadata(filename)
-    md.print_pdf_metadata(filename)
-
-
-def handle_office_metadata(filename: Path, delete_metadata: bool) -> None:
-    if delete_metadata:
-        md.remove_msoffice_metadata(filename)
-    md.print_msoffice_metadata(filename)
-
-
-def process_file(filename: Path, delete_metadata: bool) -> None:
+def process_file(filename: Path) -> None:
     extension = filename.suffix.lower()
     if extension == '.pdf':
-        handle_pdf_metadata(filename, delete_metadata)
+        md.remove_pdf_metadata(filename)
     elif extension in md.EXTENSIONS:
-        handle_office_metadata(filename, delete_metadata)
+        md.remove_msoffice_metadata(filename)
     else:
         mylogger.log.warning(f"Tipo de archivo no soportado: {filename}")
 
 
-def process_folder(folder: Path, delete_metadata: bool) -> None:
+def process_folder(folder: Path) -> None:
     files = _get_file_list(folder, md.EXTENSIONS)
     if not files:
         mylogger.log.warning(f"No hay documentos de los tipos soportados en: {folder}")
         return
 
     for filename in files:
-        mylogger.log.info(f'\n{filename.name.upper()}')
-        process_file(filename, delete_metadata)
+        process_file(filename)
 
 
 def main():
@@ -51,16 +38,14 @@ def main():
 
     parser = argparse.ArgumentParser(description="Borrar metadatos de documentos Office y PDF.")
     parser.add_argument("path", help="Ruta del archivo o carpeta a procesar.")
-    parser.add_argument("--info", action="store_true", help="Muestra los metadatos sin borrarlos.")
     args = parser.parse_args()
 
     path = Path(args.path)
-    delete_metadata = not args.info
 
     if path.is_file():
-        process_file(path, delete_metadata)
+        process_file(path)
     elif path.is_dir():
-        process_folder(path, delete_metadata)
+        process_folder(path)
     else:
         mylogger.log.warning(f"'{args.path}' no es un archivo ni una carpeta válida.")
 

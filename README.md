@@ -12,10 +12,7 @@ seguridad antes de publicarlos en Internet o de distribuirlos por cualquier otro
 ## Requisitos
 - Python 3.10 o superior
 - Librerías necesarias:
-  - `openpyxl`
   - `pypdf`
-  - `python-docx`
-  - `python-pptx`
 
 Se instalan ejecutando:
 ```bash
@@ -26,8 +23,6 @@ pip install -r requirements.txt
 El programa admite los siguientes argumentos según la operación que se desee:
 - `python3 main.py <nombre_de_fichero>`: limpia los metadatos de un fichero.
 - `python3 main.py <nombre_de_carpeta>`: limpia los metadatos de los ficheros de una carpeta.
-- `python3 main.py <nombre_de_fichero> --info`: muestra los metadatos de un fichero.
-- `python3 main.py <nombre_de_carpeta> --info`: muestra los metadatos de los ficheros de una carpeta.
 
 ## Estructura del proyecto
 - `main.py`: Programa principal.

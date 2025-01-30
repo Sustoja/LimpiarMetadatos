@@ -1,68 +1,110 @@
-from datetime import datetime
-from docx import Document
-from openpyxl import load_workbook
+import os
+import shutil
+import time
+import xml.etree.ElementTree as ET
 from pathlib import Path
-from pptx import Presentation
 
-from .constants import META_FIELDS, DATE_FIELDS
 from ..Logger import mylogger
 
 
-def _get_document_and_property_objects(filename: Path|str):
+def cambiar_fecha_modificacion(archivo: Path, nueva_fecha: str):
+    """ Cambia la fecha de modificación de un archivo. """
     try:
-        extension = filename.suffix.lower()
-        if extension == ".xlsx":
-            document = load_workbook(filename)
-            return document, document.properties
-        elif extension == ".docx":
-            document = Document(filename)
-            return document, document.core_properties
-        elif extension == ".pptx":
-            document = Presentation(filename)
-            return document, document.core_properties
-        else:
-            return None, None
+        timestamp = time.mktime(time.strptime(nueva_fecha, "%Y-%m-%d %H:%M:%S"))
+        os.utime(archivo, (timestamp, timestamp))
     except Exception as e:
-        mylogger.log.error(f"Error al acceder a las propiedades de {filename}: {e}")
-        return None, None
+        mylogger.log.error(f"Error cambiando la fecha de modificación: {e}")
 
-def print_msoffice_metadata(filename: Path) -> None:
+
+def convertir_a_zip(archivo: Path) -> Path|None:
+    """ Renombra un archivo de Office a .zip y lo descomprime en un directorio temporal. """
+    zip_path = archivo.with_suffix(".zip")
+    temp_dir = Path("temp_office")
+
     try:
-        _, props = _get_document_and_property_objects(filename)
-        if not props:
-            mylogger.log.error(f"No se pudieron cargar las propiedades para {filename}")
-            return
-
-        extension = filename.suffix.lower()
-        for field in META_FIELDS[extension]:
-            mylogger.log.info(f'{field}: {getattr(props, field, None)}')
-        for field in DATE_FIELDS[extension]:
-            mylogger.log.info(f'{field}: {getattr(props, field, None)}')
+        shutil.copy(archivo, zip_path)
+        shutil.unpack_archive(zip_path, temp_dir)
     except Exception as e:
-        mylogger.log.error(f"Error al leer los metadatos de {filename}: {e}")
+        mylogger.log.error(f"Error al convertir el archivo a ZIP: {e}")
+        return None
+    finally:
+        zip_path.unlink()
 
-def remove_msoffice_metadata(filename: Path) -> bool:
+    return temp_dir
+
+
+def limpiar_app_properties(app_xml_path: Path):
+    """ Elimina las propiedades 'Company' y 'Manager' del archivo app.xml. """
+    namespaces = {'ns': 'http://schemas.openxmlformats.org/officeDocument/2006/extended-properties'}
+
     try:
-        document, props = _get_document_and_property_objects(filename)
-        if not props:
-            mylogger.log.error(f"No se pudieron cargar las propiedades para {filename}")
-            return False
+        tree = ET.parse(app_xml_path)
+        root = tree.getroot()
 
-        reference_date = datetime(1900, 1, 1, 00, 00)
-        extension = filename.suffix.lower()
+        for tag in ['Company', 'Manager']:
+            element = root.find(f".//ns:{tag}", namespaces)
+            if element is not None:
+                root.remove(element)
 
-        # Campos generales
-        setattr(props, "revision", 1)
-        for field in META_FIELDS.get(extension, []):
-            if field != "revision":
-                setattr(props, field, "")
-
-        # Campos de fecha
-        for field in DATE_FIELDS.get(extension, []):
-            setattr(props, field, reference_date)
-
-        document.save(filename)
-        return True
+        tree.write(app_xml_path, encoding="utf-8", xml_declaration=True)
     except Exception as e:
-        mylogger.log.error(f"Error al borrar los metadatos del archivo {filename}: {e}")
+        mylogger.log.error(f"Error al limpiar app.xml: {e}")
+        raise
+
+
+def reemplazar_core_properties(core_xml_path: Path):
+    """ Reemplaza el archivo core.xml con una versión limpia desde 'helpers/RemoveMetadata/core.xml'. """
+    try:
+        shutil.copy("helpers/RemoveMetadata/core.xml", core_xml_path)
+    except FileNotFoundError:
+        mylogger.log.error("Error: No se encontró el archivo helpers/RemoveMetadata/core.xml")
+        raise
+    except Exception as e:
+        mylogger.log.error(f"Error al reemplazar core.xml: {e}")
+        raise
+
+
+def reconstruir_office_file(archivo: Path, temp_dir: Path):
+    """ Crea un nuevo archivo de Office con las propiedades eliminadas. """
+    try:
+        shutil.make_archive(archivo.stem, 'zip', temp_dir)
+        shutil.move(f"{archivo.stem}.zip", archivo)
+    except Exception as e:
+        mylogger.log.error(f"Error al reconstruir el archivo: {e}")
+        raise
+
+
+def remove_properties(archivo: Path) -> bool:
+    """ Elimina las propiedades de un archivo de Office sin modificar su contenido principal. """
+    temp_dir = convertir_a_zip(archivo)
+    if not temp_dir:
         return False
+
+    try:
+        # Limpiar app.xml si existe
+        app_xml_path = temp_dir / "docProps" / "app.xml"
+        if app_xml_path.exists():
+            limpiar_app_properties(app_xml_path)
+
+        # Reemplazar core.xml si existe
+        core_xml_path = temp_dir / "docProps" / "core.xml"
+        if core_xml_path.exists():
+            reemplazar_core_properties(core_xml_path)
+
+        # Reensamblar el archivo Office
+        reconstruir_office_file(archivo, temp_dir)
+
+        # Restaurar fecha de modificación
+        cambiar_fecha_modificacion(archivo, "2000-01-01 01:00:00")
+        return True
+
+    except Exception:
+        return False
+
+    finally:
+        shutil.rmtree(temp_dir, ignore_errors=True)
+
+
+def remove_msoffice_metadata(filename: Path) -> None:
+    if remove_properties(filename):
+        mylogger.log.info(f"{filename.name} --------> OK")
