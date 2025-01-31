@@ -4,6 +4,20 @@ import time
 import xml.etree.ElementTree as ET
 from pathlib import Path
 
+EXTENDED_PROPERTIES = ['Company', 'Manager']
+MANDATORY_KEYS = ['revision', "created", "modified"]
+
+def _parse_xml_to_dict(file_path: Path) -> dict:
+    tree = ET.parse(file_path)
+    root = tree.getroot()
+
+    data = {}
+
+    for elem in root:
+        tag = elem.tag.split('}')[-1]
+        data[tag] = elem.text if elem.text is not None else ""
+
+    return data
 
 
 def _cambiar_fecha_modificacion(archivo: Path, nueva_fecha: str) -> None:
@@ -40,7 +54,7 @@ def _borrar_extended_properties(unzipped_dir: Path) -> None:
         tree = ET.parse(app_xml_path)
         root = tree.getroot()
 
-        for tag in ['Company', 'Manager']:
+        for tag in EXTENDED_PROPERTIES:
             element = root.find(f".//ns:{tag}", namespaces)
             if element is not None:
                 root.remove(element)
@@ -83,6 +97,7 @@ def remove_msoffice_metadata(archivo_office: Path) -> None:
     random_new_date = "2000-01-01 01:00:00"
 
     unzipped_dir = _descomprimir_fichero_office(archivo_office)
+
     try:
         _borrar_core_properties(unzipped_dir)
         _borrar_extended_properties(unzipped_dir)
@@ -92,3 +107,29 @@ def remove_msoffice_metadata(archivo_office: Path) -> None:
         raise RuntimeError(e)
     finally:
         shutil.rmtree(unzipped_dir, ignore_errors=True)
+
+
+def get_msoffice_metadata(archivo_office: Path) -> dict | None:
+    unzipped_dir = _descomprimir_fichero_office(archivo_office)
+
+    try:
+        core = _parse_xml_to_dict(unzipped_dir / "docProps" / "core.xml")
+        app =_parse_xml_to_dict(unzipped_dir / "docProps" / "app.xml")
+        core.update({item: app[item] for item in EXTENDED_PROPERTIES if app.get(item)})
+    except Exception as e:
+        raise RuntimeError(e)
+    finally:
+        shutil.rmtree(unzipped_dir, ignore_errors=True)
+
+    return core
+
+
+def check_msoffice_is_clean(archivo_office: Path) -> bool:
+    metadata = get_msoffice_metadata(archivo_office)
+    ok = True
+    for key, value in metadata.items():
+        if not key in MANDATORY_KEYS and value:
+            ok = False
+            break
+
+    return ok
