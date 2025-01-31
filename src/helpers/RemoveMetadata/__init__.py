@@ -1,3 +1,3 @@
 from .constants import EXTENSIONS
-from .pdf_cleaner import print_pdf_metadata, remove_pdf_metadata
+from .pdf_cleaner import get_pdf_metadata, remove_pdf_metadata, check_pdf_is_clean
 from .msoffice_cleaner import get_msoffice_metadata, remove_msoffice_metadata, check_msoffice_is_clean

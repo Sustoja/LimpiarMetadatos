@@ -19,14 +19,12 @@ def _parse_xml_to_dict(file_path: Path) -> dict:
 
     return data
 
-
 def _cambiar_fecha_modificacion(archivo: Path, nueva_fecha: str) -> None:
     try:
         timestamp = time.mktime(time.strptime(nueva_fecha, "%Y-%m-%d %H:%M:%S"))
         os.utime(archivo, (timestamp, timestamp))
     except Exception:
         raise RuntimeError("Error al cambiar la fecha de modificación.")
-
 
 def _descomprimir_fichero_office(archivo_office: Path) -> Path | None:
     zip_file = archivo_office.with_suffix(".zip")
@@ -42,7 +40,6 @@ def _descomprimir_fichero_office(archivo_office: Path) -> Path | None:
         zip_file.unlink()
 
     return temp_dir
-
 
 def _borrar_extended_properties(unzipped_dir: Path) -> None:
     """ Elimina las propiedades 'Company' y 'Manager' que están en app.xml. """
@@ -64,7 +61,6 @@ def _borrar_extended_properties(unzipped_dir: Path) -> None:
     except Exception:
         raise RuntimeError("Error al borrar las propiedades extendidas.")
 
-
 def _borrar_core_properties(unzipped_dir: Path) -> None:
     """ Elimina las propiedades principales que se encuentran en core.xml. """
 
@@ -83,7 +79,6 @@ def _borrar_core_properties(unzipped_dir: Path) -> None:
             fich.write(empty_metadata)
     except Exception:
         raise RuntimeError("Error al limpiar las propiedades principales.")
-
 
 def _reconstruir_fichero_office(archivo_office: Path, temp_dir: Path):
     try:
@@ -108,7 +103,6 @@ def remove_msoffice_metadata(archivo_office: Path) -> None:
     finally:
         shutil.rmtree(unzipped_dir, ignore_errors=True)
 
-
 def get_msoffice_metadata(archivo_office: Path) -> dict | None:
     unzipped_dir = _descomprimir_fichero_office(archivo_office)
 
@@ -122,7 +116,6 @@ def get_msoffice_metadata(archivo_office: Path) -> dict | None:
         shutil.rmtree(unzipped_dir, ignore_errors=True)
 
     return core
-
 
 def check_msoffice_is_clean(archivo_office: Path) -> bool:
     metadata = get_msoffice_metadata(archivo_office)
