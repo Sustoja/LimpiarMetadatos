@@ -4,6 +4,8 @@ from pathlib import Path
 import helpers.RemoveMetadata as md
 from helpers.Logger import mylogger
 
+VERSION=1.0
+
 
 def _get_file_list(folder: Path, extensions: [str]) -> [Path]:
     folder = Path(folder)
@@ -82,14 +84,17 @@ def check_file_no_metadata(filename: Path) -> None:
 
 
 def prepare_argparser() -> argparse.Namespace:
-    parser = argparse.ArgumentParser(description="Borrar metadatos de documentos Office y PDF.")
+    parser = argparse.ArgumentParser(description="Borrar metadatos de documentos Office y PDF.",
+                                     usage="%(prog)s [-h] [-i | --info | -c | --check] [path]")
     parser.add_argument("path", nargs='?', default='.', help="Ruta del office_file o carpeta a procesar.")
+    parser.add_argument("-v", "--version", action="version", version=f"%(prog)s v. {VERSION}", help="Muestra la versión del programa.")
 
     group = parser.add_mutually_exclusive_group()
-    group.add_argument("-info", action="store_true", help="Muestra los metadatos sin borrarlos.")
-    group.add_argument("-check", action="store_true", help="Comprueba que no hay metadatos.")
+    group.add_argument("-i", "--info", action="store_true", help="Muestra los metadatos sin borrarlos.")
+    group.add_argument("-c", "--check", action="store_true", help="Comprueba que no hay metadatos.")
 
     return parser.parse_args()
+
 
 def main():
     mylogger.reset_log_file()
