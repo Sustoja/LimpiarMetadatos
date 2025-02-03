@@ -1,10 +1,13 @@
 import argparse
+import colorama
 from pathlib import Path
-
+from colorama import Fore, Style
 import helpers.RemoveMetadata as md
 from helpers.Logger import mylogger
 
-VERSION=1.0
+colorama.init(autoreset=True)
+
+VERSION = 1.0
 
 
 def _get_file_list(folder: Path, extensions: [str]) -> [Path]:
@@ -14,7 +17,8 @@ def _get_file_list(folder: Path, extensions: [str]) -> [Path]:
                    if f.suffix.lower() in extensions and not f.name.startswith(('~', '.'))]
                   )
 
-def _files_in_path(path:Path) -> list[Path]:
+
+def _files_in_path(path: Path) -> list[Path]:
     # Comprobamos que el argumento tiene sentido
     if path.is_file():
         files = [path]
@@ -30,6 +34,7 @@ def _files_in_path(path:Path) -> list[Path]:
         return []
 
     return files
+
 
 def _print_properties(props: dict) -> None:
     for key, value in props.items():
@@ -52,6 +57,7 @@ def remove_file_metadata(filename: Path) -> None:
 
     mylogger.log.info('---> OK')
 
+
 def display_file_metadata(filename: Path) -> None:
     mylogger.log.info(f'\n{filename.name.upper()}')
     extension = filename.suffix.lower()
@@ -66,6 +72,7 @@ def display_file_metadata(filename: Path) -> None:
         metadata = md.get_msoffice_metadata(filename)
 
     _print_properties(metadata)
+
 
 def check_file_no_metadata(filename: Path) -> None:
     mylogger.log.info(f'\n{filename.name.upper()}')
@@ -83,15 +90,33 @@ def check_file_no_metadata(filename: Path) -> None:
     mylogger.log.info("---> Limpio") if is_clean else mylogger.log.warning("---> Tiene metadatos")
 
 
+class CustomHelpFormatter(argparse.HelpFormatter):
+    def start_section(self, heading):
+        heading = f"{Fore.GREEN}{heading.capitalize()}{Style.RESET_ALL}"
+        super().start_section(heading)
+
+
 def prepare_argparser() -> argparse.Namespace:
-    parser = argparse.ArgumentParser(description="Borrar metadatos de documentos Office y PDF.",
-                                     usage="%(prog)s [-h] [-i | --info | -c | --check] [path]")
-    parser.add_argument("path", nargs='?', default='.', help="Ruta del office_file o carpeta a procesar.")
-    parser.add_argument("-v", "--version", action="version", version=f"%(prog)s v. {VERSION}", help="Muestra la versión del programa.")
+    parser = argparse.ArgumentParser(
+        description=f"{Fore.CYAN}Borra los metadatos de documentos Office y PDF.{Style.RESET_ALL}",
+        usage=f"{Fore.YELLOW}%(prog)s [path] [-i | -c] [-h] [-v] {Style.RESET_ALL}",
+        formatter_class=CustomHelpFormatter,
+        add_help=False  # Para mostrar en español el mensaje sobre la opción de ayuda.
+    )
+
+    parser.add_argument("path", nargs='?', default='.',
+                        help=f"{Fore.CYAN}Ruta del fichero o carpeta a procesar. Si no se indica, procesa la carpeta "
+                             f"actual.{Style.RESET_ALL}")
+    parser.add_argument("-v", "--version", action="version", version=f"%(prog)s v. {VERSION}",
+                        help=f"{Fore.CYAN}Muestra la versión del programa.{Style.RESET_ALL}")
+    parser.add_argument("-h", "--help", action="help",
+                        help=f"{Fore.CYAN}Muestra este mensaje de ayuda.{Style.RESET_ALL}")
 
     group = parser.add_mutually_exclusive_group()
-    group.add_argument("-i", "--info", action="store_true", help="Muestra los metadatos sin borrarlos.")
-    group.add_argument("-c", "--check", action="store_true", help="Comprueba que no hay metadatos.")
+    group.add_argument("-i", "--info", action="store_true",
+                       help=f"{Fore.CYAN}Muestra los metadatos sin borrarlos.{Style.RESET_ALL}")
+    group.add_argument("-c", "--check", action="store_true",
+                       help=f"{Fore.CYAN}Comprueba que no hay metadatos.{Style.RESET_ALL}")
 
     return parser.parse_args()
 
