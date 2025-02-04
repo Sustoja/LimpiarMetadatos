@@ -39,7 +39,7 @@ def _files_in_path(path: Path) -> list[Path]:
 def _print_properties(props: dict) -> None:
     for key, value in props.items():
         if value:
-            mylogger.log.info(f'\t{key:<15}: {value}')
+            mylogger.log.info(f'\t{key:<15}: {Fore.CYAN}{value}')
 
 
 def remove_file_metadata(filename: Path) -> None:
@@ -55,11 +55,11 @@ def remove_file_metadata(filename: Path) -> None:
     else:
         md.remove_msoffice_metadata(filename)
 
-    mylogger.log.info('---> OK')
+    mylogger.log.info(f'{Fore.GREEN}---> OK')
 
 
 def display_file_metadata(filename: Path) -> None:
-    mylogger.log.info(f'\n{filename.name.upper()}')
+    mylogger.log.info(f'\n{Fore.YELLOW}{filename.name.upper()}')
     extension = filename.suffix.lower()
 
     if extension not in md.EXTENSIONS:
@@ -87,7 +87,7 @@ def check_file_no_metadata(filename: Path) -> None:
     else:
         is_clean = md.check_msoffice_is_clean(filename)
 
-    mylogger.log.info("---> Limpio") if is_clean else mylogger.log.warning("---> Tiene metadatos")
+    mylogger.log.info(f"{Fore.GREEN}---> Limpio") if is_clean else mylogger.log.warning("---> Tiene metadatos")
 
 
 class CustomHelpFormatter(argparse.HelpFormatter):

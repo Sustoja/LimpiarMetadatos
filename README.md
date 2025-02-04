@@ -1,5 +1,5 @@
 # Eliminador de metadatos en documentos Office y PDF
-Este proyecto muestra, chequea y elimina los metadatos en documentos con extensión `.docx`, `.xlsx`, `.pptx` y `.pdf` 
+Muestra, comprueba y elimina los metadatos en documentos con extensión `.docx`, `.xlsx`, `.pptx` y `.pdf` 
 como medida de seguridad antes de publicarlos en Internet o de distribuirlos por cualquier otro medio.
 
 ## Características
