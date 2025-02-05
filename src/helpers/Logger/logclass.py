@@ -1,7 +1,7 @@
 import colorama
 import logging
 import re
-from colorama import Fore, Style
+from colorama import Fore
 from pathlib import Path
 
 colorama.init(autoreset=True)
@@ -29,9 +29,9 @@ class MyLogger:
     """
     Logger con soporte para terminal coloreado y escritura en archivo.
     """
-    LOG_FILE_NAME = 'eventos.log'
 
-    def __init__(self, log_level = logging.DEBUG):
+    def __init__(self, log_file_name: str, log_level: int):
+        self.log_file_name = log_file_name
         self.log = logging.getLogger(__name__)
         self._setup_handlers()
         self.log.setLevel(log_level)
@@ -55,7 +55,7 @@ class MyLogger:
         stream_handler.addFilter(TerminalFilter())
 
         # Manejador para el archivo
-        file_handler = logging.FileHandler(self.LOG_FILE_NAME)
+        file_handler = logging.FileHandler(self.log_file_name, mode='a')
         file_handler.setLevel(logging.DEBUG)
         file_handler.addFilter(FileFilter())
 
